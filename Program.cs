@@ -8,7 +8,6 @@ namespace PiServer
 {
     static class Program
     {
-        //Test
         static ServerTcp server = new ServerTcp(20, 1024 * 4);
         static System.Text.Encoding utf8 = System.Text.Encoding.UTF8;
         static void Main(string[] args)
@@ -59,7 +58,7 @@ namespace PiServer
             Console.WriteLine(receivedMsg);//wantedElement);
             try
             {
-                await server.SendFile("assets/" + wantedElement, rr.remoteEndPoint, code);
+                await server.SendFile("Assets/" + wantedElement, rr.remoteEndPoint, code);
             }
             catch (Exception e) when (ExceptionFilter(e, server, rr)) { }
             finally { server.CloseClientSocket(rr.remoteEndPoint); }
