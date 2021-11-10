@@ -1,5 +1,5 @@
 body{
-    background-image: url(../test.gif);
+    background-color: white;
     background-repeat: no-repeat;
     background-size: 100% 100%;
     min-height: 1500px;
@@ -21,6 +21,29 @@ body{
     left: 50%;
     top:50%;
     position: absolute;
+}
+
+.menu{
+    height: 100%;
+    width: 15%;
+    left: 0%;
+    padding: 0%;
+    background-color: blue;
+    border: 0px;
+    position: absolute;
+}
+
+.menuBar{
+    background-color: chartreuse;
+    box-shadow: 2px 3px 20px gray;
+}
+.menuBar nav{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-inline: 5%;
+    min-height: 50px;
+    
 }
 
 
