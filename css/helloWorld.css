@@ -1,6 +1,7 @@
 :root{
-    --headerHeight: 10%;
-    --boxSize: 350px;
+    font-size: 100%;
+    --headerHeight: 5em;
+    --boxSize: 30em;
     --mainColor: rgb(42, 45, 61);
 }
 
@@ -22,28 +23,28 @@ body{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-inline: 5%;
+    padding-inline: 4rem;
     height: 100%;    
 }
 
 .boxMenu{
-    margin-top: var(--headerHeight);
+    margin-top: calc(var(--headerHeight) + var(--boxSize)/5);
     display: flex;
     flex-wrap: wrap;
     justify-content:space-evenly;
     align-items: center;
-    padding-inline: 50px;
+    padding-inline: 2rem;
     height: 100%;
 }
 
 .box{
     width: var(--boxSize);
-    height: var(--boxSize);
-    padding: 50px;
-    margin: 50px;
+    height: calc(var(--boxSize)* (1 + 2/5));
+    padding: 1rem;
+    margin:2.5rem;
     margin-top: 0;
     background-color: var(--mainColor);
-    border: 5px black solid;
+    border: 3px black solid;
     display: flex; 
     justify-content: center;
 }
@@ -52,5 +53,10 @@ body{
     display: flex;
     flex-direction: column;
     text-align: center;
+    
+}
+.boxImg img{
+    width: var(--boxSize);
+    height: calc(var(--boxSize) * 9 / 16);
 }
 
