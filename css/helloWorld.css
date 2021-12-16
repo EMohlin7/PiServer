@@ -20,6 +20,7 @@ body{
 }
 
 .boxMenu{
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -31,10 +32,9 @@ body{
     width: 450px;
     height: 450px;
     padding: 50px;
-    border: 10px;
     margin: 50px;
     background-color: darkturquoise;
-    border-color: deeppink;
+    border: 10px hotpink outset; 
     text-align: center;
 }
 
