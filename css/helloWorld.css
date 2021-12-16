@@ -1,42 +1,14 @@
 body{
-    background-color: white;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    min-height: 1500px;
-}
-
-.blue{
-    color:blue;
-    left: 50%;
-    top:10px;
-    position: absolute;
-}
-
-.box{
-    height: 150px;
-    width: 150px;
-    padding: 5px;
-    background-color: red;
-    border: 10px solid blue;
-    left: 50%;
-    top:50%;
-    position: absolute;
-}
-
-.menu{
-    height: 100%;
-    width: 15%;
-    left: 0%;
-    padding: 0%;
-    background-color: blue;
-    border: 0px;
-    position: absolute;
+    margin: 0;
+    background-color: darkslategrey;
 }
 
 .menuBar{
+    position:fixed;
     background-color: chartreuse;
     width: 100%;
     height: 10%;
+    margin: 0;
     box-shadow: 2px 3px 20px gray;
 }
 .menuBar nav{
@@ -44,8 +16,25 @@ body{
     justify-content: space-between;
     align-items: center;
     padding-inline: 5%;
-    min-height: 50px;
-    
+    height: 100%;    
 }
 
+.boxMenu{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-inline: 50px;
+    height: 100%;
+}
+
+.box{
+    width: 450px;
+    height: 450px;
+    padding: 50px;
+    border: 10px;
+    margin: 50px;
+    background-color: darkturquoise;
+    border-color: deeppink;
+    text-align: center;
+}
 
