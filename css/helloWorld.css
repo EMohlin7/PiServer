@@ -12,11 +12,13 @@ body{
 
 .menuBar{
     position:fixed;
+    z-index: 100;
     top: 0px;
     background-color: var(--mainColor);
     width: 100%;
     height: var(--headerHeight);
     margin: 0;
+    margin-bottom: 5px;
     box-shadow: 2px 3px 20px black;
 }
 .menuBar nav{
@@ -28,7 +30,7 @@ body{
 }
 
 .boxMenu{
-    margin-top: calc(var(--headerHeight) + var(--boxSize)/5);
+    margin-top: calc(var(--headerHeight)*2);
     display: flex;
     flex-wrap: wrap;
     justify-content:space-evenly;
@@ -43,10 +45,21 @@ body{
     padding: 1rem;
     margin:2.5rem;
     margin-top: 0;
-    background-color: var(--mainColor);
+    margin-bottom: 5rem;
+    background-size: 400% 400%;
+    background-image: linear-gradient(var(--mainColor), darkslategrey, black);
     border: 3px black solid;
     display: flex; 
     justify-content: center;
+}
+@keyframes animation {
+    0%{transform: scale(1,1); box-shadow: 0px 0px 0px black;}
+    100%{transform: scale(1.005, 1.005); box-shadow: 2px 3px 20px black;}
+}
+.box:hover{
+    animation: animation 0.15s linear 0s;
+    animation-fill-mode: forwards;
+    
 }
 
 .boxImg{
