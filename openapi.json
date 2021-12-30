@@ -1,0 +1,20 @@
+
+{
+    "openapi": "3.0",
+    "info":
+    {
+        "title": "testApi"
+    },
+
+    "paths":
+    {
+        "/html/hej.html":
+        {
+            "get":
+            {
+                "responses":["200"],
+                "content": "text/html"
+            }
+        }
+    }
+}

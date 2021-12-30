@@ -10,6 +10,12 @@ namespace PiServer
     {
         static ServerTcp server = new ServerTcp(20, 1024 * 4);
         static System.Text.Encoding utf8 = System.Text.Encoding.UTF8;
+        private delegate Task requestHandler(string wantedElement, ReceiveResult receiveResult);
+        private static Dictionary<string, requestHandler> requestHandlers = new Dictionary<string, requestHandler>{
+            {"/", SendIndex},
+
+        };
+
         static void Main(string[] args)
         {
             server.onAccept += OnAccept;
@@ -26,8 +32,6 @@ namespace PiServer
                     break;
             }
             server.Shutdown();
-
-            
         }
 
         private static async void OnAccept(IPEndPoint ep)
@@ -42,10 +46,10 @@ namespace PiServer
 
         private static async void OnReceive(ReceiveResult rr)
         {
-
+            Console.WriteLine(rr.size);
             if (rr.size == 0)
             {
-                server.CloseClientSocket(rr.remoteEndPoint);
+                //server.CloseClientSocket(rr.remoteEndPoint);
                 return;
             }
 
@@ -54,16 +58,18 @@ namespace PiServer
 
 
             byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
-            string wantedElement = ParseMsg(receivedMsg);
+            string wantedElement = GetWantedElement(receivedMsg);
             Console.WriteLine(receivedMsg);//wantedElement);
             try
             {
-                await server.SendFile("Assets/" + wantedElement, rr.remoteEndPoint, code);
+                if(requestHandlers.TryGetValue(wantedElement, out requestHandler value))
+                    await value.Invoke(wantedElement, rr);
+                else
+                    await server.SendFile("Assets" + wantedElement, rr.remoteEndPoint, code);                
             }
             catch (Exception e) when (ExceptionFilter(e, server, rr)) { }
             finally { server.CloseClientSocket(rr.remoteEndPoint); }
         }
-
         private static bool ExceptionFilter(Exception e, Server server, ReceiveResult rr)
         {
             if (e is SocketException)
@@ -79,10 +85,22 @@ namespace PiServer
                 Console.WriteLine(e.Message);
                 return true;
             }
+            else if(e is System.UnauthorizedAccessException)
+            {
+                byte[] code = System.Text.Encoding.UTF8.GetBytes("HTTP/1.1 404 not found \r\n\r\n");
+                server.Send(code, rr.remoteEndPoint);
+                Console.WriteLine(e.Message);
+                return true;
+            }
 
             return false;
         }
 
+        private static async Task SendIndex(string element, ReceiveResult rr)
+        {
+            byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
+            await server.SendFile("Assets/html/index.html", rr.remoteEndPoint, code);
+        }
 
         private static void OnClientClosed(IPEndPoint ep)
         {
@@ -90,7 +108,7 @@ namespace PiServer
         }
 
         
-        private static string ParseMsg(string msg)
+        private static string GetWantedElement(string msg)
         {
             string[] strings = msg.Split("\r\n");
             string get = strings[0];
