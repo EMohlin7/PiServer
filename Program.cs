@@ -8,8 +8,8 @@ namespace PiServer
 {
     static class Program
     {
-        static ServerTcp server = new ServerTcp(20, 1024 * 4);
-        static System.Text.Encoding utf8 = System.Text.Encoding.UTF8;
+        private static ServerTcp server = new ServerTcp(100, 1024 * 4);
+        private static System.Text.Encoding utf8 = System.Text.Encoding.UTF8;
         private delegate Task requestHandler(string wantedElement, ReceiveResult receiveResult);
         private static Dictionary<string, requestHandler> requestHandlers = new Dictionary<string, requestHandler>{
             {"/", SendIndex},
@@ -18,15 +18,20 @@ namespace PiServer
 
         static void Main(string[] args)
         {
+            int port = 80;
+
+            if(args.Length != 0 && int.TryParse(args[0], out int value))
+                port = value;
+
             server.onAccept += OnAccept;
             server.onReceive += OnReceive;
             server.onSend += onSend;
             server.onClientClosed += OnClientClosed;
-            server.StartListening(80);
+            server.StartListening(port);
 
             while(true)
             {
-                Console.WriteLine("Input \"stop\" to stop server");
+                Console.WriteLine("Started server on port {0}\nInput \"stop\" to stop server", port);
                 string input = Console.ReadLine();
                 if(input == "stop")
                     break;
@@ -46,10 +51,9 @@ namespace PiServer
 
         private static async void OnReceive(ReceiveResult rr)
         {
-            Console.WriteLine(rr.size);
             if (rr.size == 0)
             {
-                //server.CloseClientSocket(rr.remoteEndPoint);
+                server.CloseClientSocket(rr.remoteEndPoint);
                 return;
             }
 

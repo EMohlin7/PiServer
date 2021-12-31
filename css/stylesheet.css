@@ -22,11 +22,12 @@ body{
     box-shadow: 2px 3px 20px black;
 }
 .menuBar nav{
+    margin:auto;
+    height: 100%;
+    width: 75%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-inline: 4rem;
-    height: 100%;    
 }
 
 .boxMenu{
