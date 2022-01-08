@@ -16,7 +16,7 @@ namespace PiServer
 
         };
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             int port = 80;
 
@@ -24,42 +24,43 @@ namespace PiServer
                 port = value;
 
             server.onAccept += OnAccept;
-            server.onReceive += OnReceive;
             server.onSend += onSend;
             server.onClientClosed += OnClientClosed;
-            server.StartListening(port);
+            var listeningTask = server.StartListening(port);
 
             while(true)
             {
-                Console.WriteLine("Started server on port {0}\nInput \"stop\" to stop server", port);
+                Console.WriteLine("Server listening on port {0}\nInput \"stop\" to stop server", port);
                 string input = Console.ReadLine();
                 if(input == "stop")
                     break;
             }
             server.Shutdown();
+            await listeningTask;
         }
 
-        private static async void OnAccept(IPEndPoint ep)
+        private static async void OnAccept(TcpClient client)
         {
-            Console.WriteLine("{0} connected", ep);
-            Task receiveTask = server.ReceiveAsync(ep);
+            Console.WriteLine("{0} connected", client.Client.RemoteEndPoint);
+            var receiveTask = server.ReceiveAsync(client);
             Task[] tasks = new Task[] { receiveTask, Task.Delay(10000) };
             Task finishedTask = await Task.WhenAny(tasks);
             if (!receiveTask.Equals(finishedTask))
-                server.CloseClientSocket(ep);
+                server.CloseClientSocket(client);
+            await OnReceive(receiveTask.Result);
+            server.CloseClientSocket(client);
         }
 
-        private static async void OnReceive(ReceiveResult rr)
+        private static async Task OnReceive(ReceiveResult rr)
         {
-            if (rr.size == 0)
+            /*if (rr.size == 0)
             {
-                server.CloseClientSocket(rr.remoteEndPoint);
+                server.CloseClientSocket(server.GetClient(rr.remoteEndPoint));
                 return;
-            }
+            }*/
 
             Console.WriteLine("ep:{0} size:{1} socket type:{2}", rr.remoteEndPoint, rr.size, rr.socketType);
             string receivedMsg = utf8.GetString(rr.buffer);
-
 
             byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
             string wantedElement = GetWantedElement(receivedMsg);
@@ -72,7 +73,6 @@ namespace PiServer
                     await server.SendFile("Assets" + wantedElement, rr.remoteEndPoint, code);                
             }
             catch (Exception e) when (ExceptionFilter(e, server, rr)) { }
-            finally { server.CloseClientSocket(rr.remoteEndPoint); }
         }
         private static bool ExceptionFilter(Exception e, Server server, ReceiveResult rr)
         {
@@ -82,14 +82,7 @@ namespace PiServer
                 Console.WriteLine("Socket exception code: " + s.ErrorCode);
                 return true;
             }
-            else if (e is System.IO.DirectoryNotFoundException || e is System.IO.FileNotFoundException)
-            {
-                byte[] code = System.Text.Encoding.UTF8.GetBytes("HTTP/1.1 404 not found \r\n\r\n");
-                server.Send(code, rr.remoteEndPoint);
-                Console.WriteLine(e.Message);
-                return true;
-            }
-            else if(e is System.UnauthorizedAccessException)
+            else if (e is DirectoryNotFoundException || e is FileNotFoundException || e is UnauthorizedAccessException)
             {
                 byte[] code = System.Text.Encoding.UTF8.GetBytes("HTTP/1.1 404 not found \r\n\r\n");
                 server.Send(code, rr.remoteEndPoint);
@@ -106,9 +99,9 @@ namespace PiServer
             await server.SendFile("Assets/html/index.html", rr.remoteEndPoint, code);
         }
 
-        private static void OnClientClosed(IPEndPoint ep)
+        private static void OnClientClosed(TcpClient client)
         {
-            Console.WriteLine("Removed {0}, {1} remaining", ep, server.ConnectedClients());
+            Console.WriteLine("Removed {0}, {1} remaining", client, server.ConnectedClients());
         }
 
         
