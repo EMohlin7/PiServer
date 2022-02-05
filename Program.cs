@@ -1,19 +1,25 @@
 ﻿using Network;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using HTTPParser;
 
 namespace PiServer
 {
+    public enum Headers{WantedElement, }
+
     static class Program
     {
         private static ServerTcp server = new ServerTcp(100, 1024 * 4);
         private static System.Text.Encoding utf8 = System.Text.Encoding.UTF8;
-        private delegate Task requestHandler(string wantedElement, ReceiveResult receiveResult);
+        private delegate Task requestHandler(Request request, ReceiveResult receiveResult);
         private static Dictionary<string, requestHandler> requestHandlers = new Dictionary<string, requestHandler>{
             {"/", SendIndex},
-
+            {"/video.mp4", SendVideo},
+            {"/video2.mp4", SendVideo},
         };
 
         static async Task Main(string[] args)
@@ -43,10 +49,15 @@ namespace PiServer
         {
             Console.WriteLine("{0} connected", client.Client.RemoteEndPoint);
             var receiveTask = server.ReceiveAsync(client);
-            Task[] tasks = new Task[] { receiveTask, Task.Delay(10000) };
+            Task[] tasks = new Task[] { receiveTask, Task.Delay(3000) };
             Task finishedTask = await Task.WhenAny(tasks);
+
             if (!receiveTask.Equals(finishedTask))
+            {
                 server.CloseClientSocket(client);
+                return;
+            }
+
             await OnReceive(receiveTask.Result);
             server.CloseClientSocket(client);
         }
@@ -61,18 +72,21 @@ namespace PiServer
 
             Console.WriteLine("ep:{0} size:{1} socket type:{2}", rr.remoteEndPoint, rr.size, rr.socketType);
             string receivedMsg = utf8.GetString(rr.buffer);
-
-            byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
-            string wantedElement = GetWantedElement(receivedMsg);
-            Console.WriteLine(receivedMsg);//wantedElement);
+            var req = new Request(receivedMsg);
+            var res = new Response();
+            res.code = 200;
+            
+            
+            Console.WriteLine(receivedMsg);
             try
             {
-                if(requestHandlers.TryGetValue(wantedElement, out requestHandler value))
-                    await value.Invoke(wantedElement, rr);
+                if(requestHandlers.TryGetValue(req.element, out requestHandler value))
+                    await value.Invoke(req, rr);
                 else
-                    await server.SendFile("Assets" + wantedElement, rr.remoteEndPoint, code);                
+                    await server.SendFile("Assets" + req.element, rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));                
             }
             catch (Exception e) when (ExceptionFilter(e, server, rr)) { }
+           
         }
         private static bool ExceptionFilter(Exception e, Server server, ReceiveResult rr)
         {
@@ -93,10 +107,31 @@ namespace PiServer
             return false;
         }
 
-        private static async Task SendIndex(string element, ReceiveResult rr)
+        private static Task SendIndex(Request req, ReceiveResult rr)
         {
             byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
-            await server.SendFile("Assets/html/index.html", rr.remoteEndPoint, code);
+            return server.SendFile("Assets/html/index.html", rr.remoteEndPoint, 0, null, code);
+        }
+
+        private static Task SendVideo(Request req, ReceiveResult rr)
+        {
+            var res = new Response();
+            long offset = 0;
+            long? end = null;
+            if(req.HeaderExists("range"))
+            {
+                long fileLength = new FileInfo("Assets/" + req.element).Length;
+                string[] bytes = req.GetHeader("range").Split("=")[1].Split("-");
+                offset = long.Parse(bytes[0]);
+                end = bytes[1].Length > 0 ? long.Parse(bytes[1]) : null;
+                
+                res.code = 206;
+                res.SetHeader("Content-Type", "video/mp4");
+                res.SetHeader("Content-Range", string.Format("bytes {0}-{1}/{2}", offset, end ?? fileLength-1, fileLength));
+                res.SetHeader("Content-Length", string.Format("{0}", (end ?? fileLength-1) - offset+1));
+            }
+
+            return server.SendFile("Assets/"+req.element, rr.remoteEndPoint, offset, end, utf8.GetBytes(res.GetMsg()));
         }
 
         private static void OnClientClosed(TcpClient client)
@@ -105,13 +140,7 @@ namespace PiServer
         }
 
         
-        private static string GetWantedElement(string msg)
-        {
-            string[] strings = msg.Split("\r\n");
-            string get = strings[0];
-            return get.Split(" ")[1];
-        }
-
+        
         private static void onSend(long length, IPEndPoint ep)
         {
             Console.WriteLine("Sent {0} bytes to {1}", length, ep);
