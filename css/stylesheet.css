@@ -21,15 +21,22 @@ body{
     margin: 0;
     margin-bottom: 5px;
     box-shadow: 2px 3px 20px black;
-}
-.menuBar nav{
-    margin:auto;
-    height: 100%;
-    width: 75%;
+
     display: flex;
-    justify-content: space-between;
+    justify-content: space-evenly;
     align-items: center;
 }
+
+.account{
+    margin: 5px;
+    margin-bottom: 0;
+    font-size: small;
+}
+.account p{
+    margin: 5px;
+    margin-left: 0;
+}
+
 
 .boxMenu{
     margin-top: calc(var(--headerHeight)*2);

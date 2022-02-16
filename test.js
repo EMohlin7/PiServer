@@ -1,22 +1,15 @@
 
-const apiUrl = "http://localhost:8080/";
+const host = window.location.protocol + "//" + window.location.host;
 
-function SendApiCall(requestType, url, body, async)
+async function ApiGet(url)
 {
-    const request = new XMLHttpRequest();
-    request.open(requestType, url, async);
-    request.setRequestHeader("Accept", "application/json");
-    request.setRequestHeader("Content-Type", "application/json");
-    request.send(body);
-    return {
-        "code" : request.status,
-        "body": request.responseText
-    };
+    const res = await fetch(url);
+    return await res.text();
 }
 
-function PcStarterGet(url)
+async function PcStarterGet()
 {
-    return SendApiCall("GET", url, null, false);
+    return await JSON.parse(ApiGet(host + "/pcStarter"));
 }
 
 function PcStarterPost(url, status)
@@ -26,16 +19,18 @@ function PcStarterPost(url, status)
     return SendApiCall("POST", url, body, false);
 }
 
-function Test()
+function test(form)
 {
-    alert("Button pressed!!");
+    form.action = "login";
+    alert("test");
 }
+
+
 const pcbg = document.getElementById("pcButtonGet");
 
-pcbg.addEventListener("click", function(){
-    const response = PcStarterGet(apiUrl+"pcStarter"); 
-    const obj =JSON.parse(response["body"]);
-    const status = obj["status"];
+pcbg.addEventListener("click", async function(){
+    const body = await PcStarterGet();
+    const status = body["status"];
     if(status == 1)
     {
         pcbg.textContent = 1;

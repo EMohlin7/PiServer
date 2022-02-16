@@ -9,10 +9,10 @@ using HTTPParser;
 
 namespace PiServer
 {
-    public enum Headers{WantedElement, }
-
     static class Program
     {
+        private static string apiAddress = "127.0.0.1";
+        private static int apiPort = 8080;
         private static ServerTcp server = new ServerTcp(100, 1024 * 4);
         private static System.Text.Encoding utf8 = System.Text.Encoding.UTF8;
         private delegate Task requestHandler(Request request, ReceiveResult receiveResult);
@@ -20,6 +20,8 @@ namespace PiServer
             {"/", SendIndex},
             {"/video.mp4", SendVideo},
             {"/video2.mp4", SendVideo},
+            {"/pcstarter", PcStarter},
+            {"/login", Login},
         };
 
         static async Task Main(string[] args)
@@ -30,7 +32,7 @@ namespace PiServer
                 port = value;
 
             server.onAccept += OnAccept;
-            server.onSend += onSend;
+            server.onSend += OnSend;
             server.onClientClosed += OnClientClosed;
             var listeningTask = server.StartListening(port);
 
@@ -64,20 +66,19 @@ namespace PiServer
 
         private static async Task OnReceive(ReceiveResult rr)
         {
-            /*if (rr.size == 0)
+            if (rr.size == 0)
             {
                 server.CloseClientSocket(server.GetClient(rr.remoteEndPoint));
                 return;
-            }*/
+            }
 
             Console.WriteLine("ep:{0} size:{1} socket type:{2}", rr.remoteEndPoint, rr.size, rr.socketType);
             string receivedMsg = utf8.GetString(rr.buffer);
+            Console.WriteLine(receivedMsg);
             var req = new Request(receivedMsg);
             var res = new Response();
             res.code = 200;
-            
-            
-            Console.WriteLine(receivedMsg);
+                       
             try
             {
                 if(requestHandlers.TryGetValue(req.element, out requestHandler value))
@@ -134,6 +135,67 @@ namespace PiServer
             return server.SendFile("Assets/"+req.element, rr.remoteEndPoint, offset, end, utf8.GetBytes(res.GetMsg()));
         }
 
+        private static async Task<Task> PcStarter(Request req, ReceiveResult rr)
+        {
+            ClientTcp client = new ClientTcp(2048);
+            if(!await client.Connect(apiAddress, apiPort))
+                return SendInternalServerError(rr.remoteEndPoint);
+            
+            var re = new Request();
+            re.method = "GET";
+            re.element = "/pcStarter";
+            re.SetHeader("Host", "localhost:80");
+            re.SetHeader("Connection", "keep-alive");
+           
+            var bytes = utf8.GetBytes(re.GetMsg());
+            client.Send(bytes, bytes.Length);
+            ReceiveResult apiRR = await client.ReceiveAsync();
+            client.Shutdown();
+
+            if(!apiRR.success)
+                return SendInternalServerError(rr.remoteEndPoint);
+            
+            return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
+        }
+
+        private static async Task<Task> Login(Request req, ReceiveResult rr)
+        {
+            var api = new ClientTcp(2048);
+            await api.Connect(apiAddress, apiPort);
+
+            var apiReq = new Request();
+            apiReq.element = "/login";
+            apiReq.method = "POST";
+            apiReq.body = req.body;
+            apiReq.SetHeader("Host", "localhost:80");
+            apiReq.SetHeader("Connection", "keep-alive");
+            apiReq.SetHeader("Content-Type", "application/x-www-form-urlencoded");
+            apiReq.SetHeader("Content-Length", req.body.Length.ToString());
+
+            var bytes = utf8.GetBytes(apiReq.GetMsg());
+            api.Send(bytes, bytes.Length);
+            var apiRR = await api.ReceiveAsync();
+            if(!apiRR.success)
+                return SendInternalServerError(rr.remoteEndPoint);
+            var apiRes = new Response(utf8.GetString(apiRR.buffer));
+            if(apiRes.code != 200)
+                return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
+            
+            var res = new Response(303);
+            res.SetHeader("Location", "/");
+            return server.SendAsync(utf8.GetBytes(res.GetMsg()), rr.remoteEndPoint);
+        }
+
+
+        private static Task SendBadRequest(IPEndPoint remoteEndPoint)
+        {
+            return server.SendAsync(utf8.GetBytes(new Response(400).GetMsg()), remoteEndPoint);
+        }
+        private static Task SendInternalServerError(IPEndPoint remoteEndPoint)
+        {
+            return server.SendAsync(utf8.GetBytes(new Response(500).GetMsg()), remoteEndPoint);
+        }
+
         private static void OnClientClosed(TcpClient client)
         {
             Console.WriteLine("Removed {0}, {1} remaining", client, server.ConnectedClients());
@@ -141,7 +203,7 @@ namespace PiServer
 
         
         
-        private static void onSend(long length, IPEndPoint ep)
+        private static void OnSend(long length, IPEndPoint ep)
         {
             Console.WriteLine("Sent {0} bytes to {1}", length, ep);
         }
