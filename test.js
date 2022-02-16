@@ -48,13 +48,19 @@ pcbg.addEventListener("click", async function(){
 });
 
 
-const pcbp = document.getElementById("pcButtonPost");
-//res = PcStarterGet(apiUrl+"pcStarter");
+async function TestLogin(event)
+{
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const obj = Object.fromEntries(formData.entries());
+    console.log(obj);
+    const res = await fetch(host + "/login", {
+        method: "post",
+        body: JSON.stringify(obj),
+        headers: {"Content-Type":"application/json"}
+    });
+    console.log(res);
+}
 
-let st = 0;
-pcbp.addEventListener("click", function(){
-    if(st == 0){st = 1;}else{st = 0;} 
-    //console.log(st);
-    const response = PcStarterPost(apiUrl+"pcStarter", st); 
-    alert(response["body"]);
-});
+document.getElementById("loginForm").addEventListener("submit", TestLogin);

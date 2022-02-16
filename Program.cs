@@ -161,7 +161,8 @@ namespace PiServer
         private static async Task<Task> Login(Request req, ReceiveResult rr)
         {
             var api = new ClientTcp(2048);
-            await api.Connect(apiAddress, apiPort);
+            if(!await api.Connect(apiAddress, apiPort))
+                return SendInternalServerError(rr.remoteEndPoint);
 
             var apiReq = new Request();
             apiReq.element = "/login";
@@ -169,12 +170,13 @@ namespace PiServer
             apiReq.body = req.body;
             apiReq.SetHeader("Host", "localhost:80");
             apiReq.SetHeader("Connection", "keep-alive");
-            apiReq.SetHeader("Content-Type", "application/x-www-form-urlencoded");
-            apiReq.SetHeader("Content-Length", req.body.Length.ToString());
+            apiReq.SetHeader("Content-Type", "application/json");
+            apiReq.SetHeader("Content-Length", apiReq.body.Length.ToString());
 
             var bytes = utf8.GetBytes(apiReq.GetMsg());
             api.Send(bytes, bytes.Length);
             var apiRR = await api.ReceiveAsync();
+            api.Shutdown();
             if(!apiRR.success)
                 return SendInternalServerError(rr.remoteEndPoint);
             var apiRes = new Response(utf8.GetString(apiRR.buffer));
