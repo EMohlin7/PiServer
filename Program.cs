@@ -26,6 +26,12 @@ namespace PiServer
 
         static async Task Main(string[] args)
         {
+            var req = new Request();
+            req.SetHeader("Hej", "da");
+            if(req.HeaderExists("hej"))
+                Console.WriteLine("insens");
+            else
+                Console.WriteLine("Sensitive");
             int port = 80;
 
             if(args.Length != 0 && int.TryParse(args[0], out int value))
@@ -183,8 +189,11 @@ namespace PiServer
             if(apiRes.code != 200)
                 return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
             
-            var res = new Response(303);
+            var res = new Response(apiRes.GetMsg());
+            res.code = 303;
             res.SetHeader("Location", "/");
+            Console.WriteLine(utf8.GetString(apiRR.buffer));
+            Console.WriteLine(res.GetMsg());
             return server.SendAsync(utf8.GetBytes(res.GetMsg()), rr.remoteEndPoint);
         }
 

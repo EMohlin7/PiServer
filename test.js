@@ -54,13 +54,16 @@ async function TestLogin(event)
     const form = event.currentTarget;
     const formData = new FormData(form);
     const obj = Object.fromEntries(formData.entries());
-    console.log(obj);
     const res = await fetch(host + "/login", {
         method: "post",
         body: JSON.stringify(obj),
         headers: {"Content-Type":"application/json"}
     });
-    console.log(res);
+
+    if(res.redirected)
+    {
+        window.location.assign(res.url);
+    }
 }
 
 document.getElementById("loginForm").addEventListener("submit", TestLogin);
