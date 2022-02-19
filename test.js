@@ -62,8 +62,26 @@ async function TestLogin(event)
 
     if(res.redirected)
     {
-        window.location.assign(res.url);
+        //window.location.assign(res.url);
+        PopUp("test");
+        
     }
+}
+
+function PopUp(text)
+{
+    if(document.getElementById("popUp") != null)
+    {
+
+        return;
+    }
+
+    const popUp = document.createElement("div");
+    popUp.id = "popUp";
+    popUp.classList.add("popUp");
+    const popUpText = document.createTextNode(text);
+    popUp.appendChild(popUpText);
+    document.body.append(popUp);
 }
 
 document.getElementById("loginForm").addEventListener("submit", TestLogin);

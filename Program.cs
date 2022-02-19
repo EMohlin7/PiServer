@@ -20,7 +20,7 @@ namespace PiServer
             {"/", SendIndex},
             {"/video.mp4", SendVideo},
             {"/video2.mp4", SendVideo},
-            {"/pcstarter", PcStarter},
+            {"/pcStarter", PcStarter},
             {"/login", Login},
         };
 

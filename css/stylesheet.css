@@ -1,7 +1,7 @@
 :root{
     font-size: 100%;
     --headerHeight: 5em;
-    --boxSize: 30em;
+    --boxWidth: 30em;
     --mainColor: rgb(42, 45, 61);
 }
 
@@ -49,8 +49,8 @@ body{
 }
 
 .box{
-    width: var(--boxSize);
-    height: calc(var(--boxSize)* (1 + 2/5));
+    width: var(--boxWidth);
+    height: calc(var(--boxWidth)* (1 + 2/5));
     padding: 1rem;
     margin:2.5rem;
     margin-top: 0;
@@ -77,12 +77,12 @@ body{
     text-align: center;
 }
 .boxImg img{
-    width: var(--boxSize);
-    height: calc(var(--boxSize) * 9 / 16);
+    width: var(--boxWidth);
+    height: calc(var(--boxWidth) * 9 / 16);
 }
 .boxImg video{
-    width: var(--boxSize);
-    height: calc(var(--boxSize) * 9 / 16);
+    width: var(--boxWidth);
+    height: calc(var(--boxWidth) * 9 / 16);
 }
 
 .pcButton{
@@ -95,4 +95,15 @@ body{
     font-size: xx-large;
     text-transform: uppercase;
     font-weight: bold;
+}
+
+.popUp{
+    width: var(--boxWidth);
+    height: calc(var(--boxWidth) / 10);
+    position: fixed;
+    z-index: 100;
+    background-color: red;
+    left: 50%;
+    bottom: 1em;
+    border-radius: 6px;
 }
