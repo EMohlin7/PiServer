@@ -63,20 +63,24 @@ async function TestLogin(event)
     if(res.redirected)
     {
         //window.location.assign(res.url);
-        PopUp("test");
+        PopUp("Hejsan svejasn på dejsan");
         
     }
 }
 
 function PopUp(text)
 {
-    if(document.getElementById("popUp") != null)
+    let popUp = document.getElementById("popUp");
+    if(popUp != null)
     {
-
+        popUp.classList.remove("popUp");
+        popUp.offsetWidth;
+        popUp.classList.add("popUp");
+        //popUp.style.animation = "popUpAnimation 5s";
         return;
     }
 
-    const popUp = document.createElement("div");
+    popUp = document.createElement("div");
     popUp.id = "popUp";
     popUp.classList.add("popUp");
     const popUpText = document.createTextNode(text);

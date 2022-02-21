@@ -61,12 +61,12 @@ body{
     display: flex; 
     justify-content: center;
 }
-@keyframes animation {
+@keyframes boxAnimation {
     0%{transform: scale(1,1); box-shadow: 0px 0px 0px black;}
     100%{transform: scale(1.003, 1.003); box-shadow: 0px 0px 20px black;}
 }
 .box:hover{
-    animation: animation 0.1s linear 0s;
+    animation: boxAnimation 0.1s linear 0s;
     animation-fill-mode: forwards;
     
 }
@@ -98,12 +98,36 @@ body{
 }
 
 .popUp{
-    width: var(--boxWidth);
-    height: calc(var(--boxWidth) / 10);
+    --width: var(--boxWidth);
+    --height: calc(var(--boxWidth) / 10);
+    --border: 3px;
+
+    width: var(--width);
+    height: var(--height);
     position: fixed;
     z-index: 100;
-    background-color: red;
-    left: 50%;
-    bottom: 1em;
+    background-color: var(--mainColor);
+    border: var(--border) solid black;
     border-radius: 6px;
+    left: calc(50% - var(--width) / 2 - var(--border));
+    bottom: calc(0 - var(--height) - var(border) * 2);
+    
+    
+    
+
+    text-align: center;
+    line-height: var(--height);
+
+    animation-name: popUpAnimation;
+    animation-duration: 5s;
+    animation-fill-mode: forwards;
+
+    
+}
+
+@keyframes popUpAnimation {
+    0% {bottom: -4em}
+    10% {bottom: 1em;}
+    90% {bottom: 1em;}
+    100% {bottom: -4em;}
 }
