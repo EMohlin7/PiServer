@@ -1,11 +1,4 @@
 
-const host = window.location.protocol + "//" + window.location.host;
-
-async function ApiGet(url)
-{
-    const res = await fetch(url);
-    return await res.text();
-}
 
 async function PcStarterGet()
 {
@@ -17,12 +10,6 @@ function PcStarterPost(url, status)
     const body = `{"status" : ${status}}`;
     
     return SendApiCall("POST", url, body, false);
-}
-
-function test(form)
-{
-    form.action = "login";
-    alert("test");
 }
 
 
@@ -48,9 +35,11 @@ pcbg.addEventListener("click", async function(){
 });
 
 
-async function TestLogin(event)
+
+async function Login(event)
 {
     event.preventDefault();
+    PopUp("Logging in...")
     const form = event.currentTarget;
     const formData = new FormData(form);
     const obj = Object.fromEntries(formData.entries());
@@ -60,32 +49,14 @@ async function TestLogin(event)
         headers: {"Content-Type":"application/json"}
     });
 
+    PopUp(res.status);
+
     if(res.redirected)
     {
         //window.location.assign(res.url);
-        PopUp("Hejsan svejasn på dejsan");
+        PopUp("Login");
         
     }
 }
 
-function PopUp(text)
-{
-    let popUp = document.getElementById("popUp");
-    if(popUp != null)
-    {
-        popUp.classList.remove("popUp");
-        popUp.offsetWidth;
-        popUp.classList.add("popUp");
-        //popUp.style.animation = "popUpAnimation 5s";
-        return;
-    }
-
-    popUp = document.createElement("div");
-    popUp.id = "popUp";
-    popUp.classList.add("popUp");
-    const popUpText = document.createTextNode(text);
-    popUp.appendChild(popUpText);
-    document.body.append(popUp);
-}
-
-document.getElementById("loginForm").addEventListener("submit", TestLogin);
+document.getElementById("loginForm").addEventListener("submit", Login);

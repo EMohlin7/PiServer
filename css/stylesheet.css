@@ -120,9 +120,6 @@ body{
 
     animation-name: popUpAnimation;
     animation-duration: 5s;
-    animation-fill-mode: forwards;
-
-    
 }
 
 @keyframes popUpAnimation {

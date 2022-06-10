@@ -12,7 +12,8 @@ namespace PiServer
     static class Program
     {
         private static string apiAddress = "127.0.0.1";
-        private static int apiPort = 8080;
+        private const int apiPort = 8080;
+        private static int port;
         private static ServerTcp server = new ServerTcp(100, 1024 * 4);
         private static System.Text.Encoding utf8 = System.Text.Encoding.UTF8;
         private delegate Task requestHandler(Request request, ReceiveResult receiveResult);
@@ -22,17 +23,13 @@ namespace PiServer
             {"/video2.mp4", SendVideo},
             {"/pcStarter", PcStarter},
             {"/login", Login},
+            {"/createaccount", CreateAccountPage},
+            {"/newaccount", NewAccount},
         };
 
         static async Task Main(string[] args)
         {
-            var req = new Request();
-            req.SetHeader("Hej", "da");
-            if(req.HeaderExists("hej"))
-                Console.WriteLine("insens");
-            else
-                Console.WriteLine("Sensitive");
-            int port = 80;
+            port = 80;
 
             if(args.Length != 0 && int.TryParse(args[0], out int value))
                 port = value;
@@ -174,7 +171,7 @@ namespace PiServer
             apiReq.element = "/login";
             apiReq.method = "POST";
             apiReq.body = req.body;
-            apiReq.SetHeader("Host", "localhost:80");
+            apiReq.SetHeader("Host", string.Format("localhost:{0}", port));
             apiReq.SetHeader("Connection", "keep-alive");
             apiReq.SetHeader("Content-Type", "application/json");
             apiReq.SetHeader("Content-Length", apiReq.body.Length.ToString());
@@ -197,6 +194,44 @@ namespace PiServer
             return server.SendAsync(utf8.GetBytes(res.GetMsg()), rr.remoteEndPoint);
         }
 
+        private static async Task CreateAccountPage(Request req, ReceiveResult rr)
+        {
+            var res = new Response(200);
+            res.SetHeader("Content-Type", "text/html");
+        
+            await server.SendFile("Assets/html/createAccount.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
+        }
+
+        private static async Task<Task> NewAccount(Request req, ReceiveResult rr)
+        {
+            var api = new ClientTcp(2048);
+            if(!await api.Connect(apiAddress, apiPort))
+                return SendInternalServerError(rr.remoteEndPoint);
+            
+            var apiReq = new Request();
+            apiReq.element = req.element;
+            apiReq.method = "POST";
+            apiReq.body = req.body;
+            apiReq.SetHeader("Host", string.Format("localhost:{0}", port)); 
+            apiReq.SetHeader("Connection", "keep-alive");
+            apiReq.SetHeader("Content-Type", "application/x-www-form-urlencoded");
+            apiReq.SetHeader("Content-Length", apiReq.body.Length.ToString());
+
+            var bytes = utf8.GetBytes(apiReq.GetMsg());
+            api.Send(bytes, bytes.Length);
+            var apiRR = await api.ReceiveAsync();
+            if(!apiRR.success)
+                return SendInternalServerError(rr.remoteEndPoint);
+            
+            var apiRes = new Response(utf8.GetString(apiRR.buffer));
+            if(apiRes.code != 200)
+                return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
+            
+            var res = new Response(apiRes.GetMsg());
+            res.code = 303;
+            res.SetHeader("Location", "/");
+            return server.SendAsync(utf8.GetBytes(res.GetMsg()), rr.remoteEndPoint);
+        }
 
         private static Task SendBadRequest(IPEndPoint remoteEndPoint)
         {
