@@ -17,12 +17,13 @@ async function CreateAccount(event)
         body: JSON.stringify(data),
         headers: {"Content-Type":"application/json"}
     });
-
-    PopUp(res.status);
-    if(res.redirected)
+    const object = await res.json();
+    
+    PopUp(object['message']);
+    if(object['status'] == 200)
     {
-        window.location.assign(res.url);
-        PopUp("account created");   
+        localStorage.setItem("accessToken", object['accessToken']);
+        window.location.assign("/");
     }
 }
 

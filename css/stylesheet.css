@@ -3,11 +3,12 @@
     --headerHeight: 5em;
     --boxWidth: 30em;
     --mainColor: rgb(42, 45, 61);
+    --bgColor: darkslategrey;
 }
 
 body{
     margin: 0;
-    background-color: darkslategrey;
+    background-color: var(--bgColor);
 }
 
 
@@ -121,6 +122,26 @@ body{
     animation-name: popUpAnimation;
     animation-duration: 5s;
 }
+
+.inputForm input{
+    background-color: var(--bgColor);
+    border-color: var(--mainColor);
+    border-style:solid;
+    border-width: 2px;
+    outline:none;
+    transition-duration: 300ms;
+    border-color: rgb(35, 45, 50);
+}
+
+.inputForm input:hover:not(:focus){
+    border-color: rgb(25, 35, 40);
+}
+
+.inputForm input:focus{
+    border-color: black;
+}
+
+
 
 @keyframes popUpAnimation {
     0% {bottom: -4em}

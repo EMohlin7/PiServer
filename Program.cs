@@ -77,7 +77,7 @@ namespace PiServer
 
             Console.WriteLine("ep:{0} size:{1} socket type:{2}", rr.remoteEndPoint, rr.size, rr.socketType);
             string receivedMsg = utf8.GetString(rr.buffer);
-            Console.WriteLine(receivedMsg);
+            //Console.WriteLine(receivedMsg);
             var req = new Request(receivedMsg);
             var res = new Response();
             res.code = 200;
@@ -175,7 +175,7 @@ namespace PiServer
             apiReq.SetHeader("Connection", "keep-alive");
             apiReq.SetHeader("Content-Type", "application/json");
             apiReq.SetHeader("Content-Length", apiReq.body.Length.ToString());
-
+            Console.WriteLine(apiReq.GetMsg());
             var bytes = utf8.GetBytes(apiReq.GetMsg());
             api.Send(bytes, bytes.Length);
             var apiRR = await api.ReceiveAsync();
@@ -214,7 +214,7 @@ namespace PiServer
             apiReq.body = req.body;
             apiReq.SetHeader("Host", string.Format("localhost:{0}", port)); 
             apiReq.SetHeader("Connection", "keep-alive");
-            apiReq.SetHeader("Content-Type", "application/x-www-form-urlencoded");
+            apiReq.SetHeader("Content-Type", "application/json");
             apiReq.SetHeader("Content-Length", apiReq.body.Length.ToString());
 
             var bytes = utf8.GetBytes(apiReq.GetMsg());
@@ -223,14 +223,7 @@ namespace PiServer
             if(!apiRR.success)
                 return SendInternalServerError(rr.remoteEndPoint);
             
-            var apiRes = new Response(utf8.GetString(apiRR.buffer));
-            if(apiRes.code != 200)
-                return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
-            
-            var res = new Response(apiRes.GetMsg());
-            res.code = 303;
-            res.SetHeader("Location", "/");
-            return server.SendAsync(utf8.GetBytes(res.GetMsg()), rr.remoteEndPoint);
+            return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
         }
 
         private static Task SendBadRequest(IPEndPoint remoteEndPoint)

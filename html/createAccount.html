@@ -9,15 +9,30 @@
     <script defer src="js/account.js"></script>
 </head>
 
-<div class="boxMenu">
-    <div class="box">
-        <form action="/newaccount" method="post" id="accountForm">
-            <input type="text" name="uname" placeholder="Username">
-            <input type="password" name="password" placeholder="Password">
-            <input type="password" name="confirmPassword" placeholder="Confirm password">
-            <input type="submit">
-        </form>
+<body>
+    <header class="menuBar">
+        <h1><a href="/" style="color: inherit; text-decoration: none;">Edvin är bäst</a></h1>
+        <div class="account" id="account">
+            <form action="/login" method="post" id="loginForm">
+                <input type="text" name="uname" placeholder="Username"> 
+                <input type="password" name="password" placeholder="Password">
+                <input type="submit" value="Login">
+            </form>
+            <p>Don't have an account? Create one <a href="createaccount">here!</a></p>
+        </div>
+    </header>
+
+    <div class="boxMenu">
+        <div class="box">
+            <form action="/newaccount" method="post" id="accountForm">
+                <input type="text" name="uname" placeholder="Username">
+                <input type="password" name="password" placeholder="Password">
+                <input type="password" name="confirmPassword" placeholder="Confirm password">
+                <input type="submit">
+            </form>
+        </div>
     </div>
-</div>
+</body>
+
 
 </html>
