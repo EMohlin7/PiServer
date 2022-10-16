@@ -4,7 +4,8 @@ const host = window.location.protocol + "//" + window.location.host;
 async function ApiGet(url)
 {
     const res = await fetch(url);
-    return res;
+    console.log(res);
+    return res//res.json();
 }
 
 

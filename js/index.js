@@ -2,7 +2,7 @@
 
 async function PcStarterGet()
 {
-    return await JSON.parse(ApiGet(host + "/pcStarter"));
+    return await ApiGet(host + "/pcStarter");
 }
 
 function PcStarterPost(url, status)
@@ -31,7 +31,8 @@ pcbg.addEventListener("click", async function(){
     else
         pcbg.textContent = "error";
 
-    alert(response["body"]);
+    //alert(body);
+    console.log(body);
 });
 
 
