@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using HTTPParser;
+using System.Threading;
 
 namespace PiServer
 {
@@ -28,17 +29,26 @@ namespace PiServer
             {"/newaccount", NewAccount},
         };
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             port = 80;
 
             if(args.Length != 0 && int.TryParse(args[0], out int value))
                 port = value;
 
-            server.onAccept += OnAccept;
+            //server.onAccept += OnAccept;
             server.onSend += OnSend;
             server.onClientClosed += OnClientClosed;
-            var listeningTask = server.StartListening(port);
+            bool success = server.StartListening(port);
+            if(!success)
+            {
+                Console.WriteLine("The server failed to start. Closing application...");
+                return;
+            }
+
+            Thread th = new Thread(CheckForClients);
+            th.IsBackground = true;
+            th.Start();
 
             while(true)
             {
@@ -51,11 +61,25 @@ namespace PiServer
                     break;
             }
             server.Shutdown();
-            await listeningTask;
         }
 
-        private static async void OnAccept(TcpClient client)
+        private static void CheckForClients()
         {
+            while(true)
+            {
+                if(server.numWaitingClients > 0)
+                {
+                    Thread th = new Thread(OnAccept);
+                    th.IsBackground = true;
+                    th.Start(server.FetchWaitingClient());
+                }
+                
+            }
+        }
+
+        private static async void OnAccept(object tcpClient)
+        {
+            var client = (TcpClient)tcpClient;
             Console.WriteLine("{0} connected", client.Client.RemoteEndPoint);
             var receiveTask = server.ReceiveAsync(client);
             Task[] tasks = new Task[] { receiveTask, Task.Delay(3000) };
