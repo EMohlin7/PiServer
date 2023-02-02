@@ -1,11 +1,41 @@
-
 const host = window.location.protocol + "//" + window.location.host;
+const api = host +":8080"
 
-async function ApiGet(url)
+
+
+
+const jwt = localStorage.getItem("accessToken");
+if(window.location.pathname != "/user_login" && window.location.pathname != "/createaccount")
 {
-    const res = await fetch(url);
-    console.log(res);
-    return res//res.json();
+    if(jwt != null)
+    {
+        Auth(jwt).then((res)=>{
+            if(res.status != 200)
+            {
+                localStorage.removeItem("accessToken");
+                window.location.assign("/user_login");
+            }
+
+            res.json().then((data)=>{document.getElementById("username").innerHTML = data["username"];});
+        })
+    }
+    else
+    {
+        window.location.assign("/user_login")
+    }
+}
+
+
+async function Auth(jwt)
+{
+    const res = await fetch(api + "/authjwt",{
+        method: "GET",
+        headers: {
+            "Authorization": jwt
+        }
+    });
+    
+    return res;
 }
 
 

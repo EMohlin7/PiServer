@@ -19,6 +19,7 @@ namespace PiServer
         private delegate Task requestHandler(Request request, ReceiveResult receiveResult);
         private static Dictionary<string, requestHandler> requestHandlers = new Dictionary<string, requestHandler>{
             {"/", SendIndex},
+            {"/user_login", UserLogin},
             {"/video.mp4", SendVideo},
             {"/video2.mp4", SendVideo},
             {"/pcStarter", PcStarter},
@@ -41,9 +42,12 @@ namespace PiServer
 
             while(true)
             {
-                Console.WriteLine("Server listening on port {0}\nInput \"stop\" to stop server", port);
+                Console.WriteLine("Server listening on port {0}\nInput \"stop\" to stop server, or " +
+                "\"clear\" to clear the console", port);
                 string input = Console.ReadLine();
-                if(input == "stop")
+                if(input == "clear")
+                    Console.Clear();
+                else if(input == "stop")
                     break;
             }
             server.Shutdown();
@@ -77,7 +81,7 @@ namespace PiServer
 
             Console.WriteLine("ep:{0} size:{1} socket type:{2}", rr.remoteEndPoint, rr.size, rr.socketType);
             string receivedMsg = utf8.GetString(rr.buffer);
-            //Console.WriteLine(receivedMsg);
+            Console.WriteLine(receivedMsg);
             var req = new Request(receivedMsg);
             var res = new Response();
             res.code = 200;
@@ -117,6 +121,12 @@ namespace PiServer
             return server.SendFile("Assets/html/index.html", rr.remoteEndPoint, 0, null, code);
         }
 
+        private static Task UserLogin(Request req, ReceiveResult rr)
+        {
+            byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
+            return server.SendFile("Assets/html/user_login.html", rr.remoteEndPoint, 0, null, code);
+        }
+
         private static Task SendVideo(Request req, ReceiveResult rr)
         {
             var res = new Response();
@@ -154,7 +164,7 @@ namespace PiServer
             client.Send(bytes, bytes.Length);
             ReceiveResult apiRR = await client.ReceiveAsync();
             client.Shutdown();
-
+            Console.WriteLine(utf8.GetString(apiRR.buffer));
             if(!apiRR.success)
                 return SendInternalServerError(rr.remoteEndPoint);
             
@@ -186,12 +196,12 @@ namespace PiServer
             if(apiRes.code != 200)
                 return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
             
-            var res = new Response(apiRes.GetMsg());
-            res.code = 303;
-            res.SetHeader("Location", "/");
-            Console.WriteLine(utf8.GetString(apiRR.buffer));
-            Console.WriteLine(res.GetMsg());
-            return server.SendAsync(utf8.GetBytes(res.GetMsg()), rr.remoteEndPoint);
+            //var res = new Response(apiRes.GetMsg());
+            //res.code = 303;
+
+            //res.SetHeader("Location", "/");
+            //Console.WriteLine(res.GetMsg());
+            return server.SendAsync(apiRR.buffer, rr.remoteEndPoint);
         }
 
         private static async Task CreateAccountPage(Request req, ReceiveResult rr)

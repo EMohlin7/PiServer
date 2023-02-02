@@ -2,7 +2,7 @@
 
 async function PcStarterGet()
 {
-    return await ApiGet(host + "/pcStarter");
+    return await fetch(host + "/pcStarter");
 }
 
 function PcStarterPost(url, status)
@@ -16,8 +16,9 @@ function PcStarterPost(url, status)
 const pcbg = document.getElementById("pcButtonGet");
 
 pcbg.addEventListener("click", async function(){
-    const body = await PcStarterGet();
-    const status = body["status"];
+    const res = await PcStarterGet();
+    const data = await res.json()
+    const status = data["status"];
     if(status == 1)
     {
         pcbg.textContent = 1;
@@ -32,32 +33,10 @@ pcbg.addEventListener("click", async function(){
         pcbg.textContent = "error";
 
     //alert(body);
-    console.log(body);
+    console.log(data);
 });
 
 
 
-async function Login(event)
-{
-    event.preventDefault();
-    PopUp("Logging in...")
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const obj = Object.fromEntries(formData.entries());
-    const res = await fetch(host + "/login", {
-        method: "post",
-        body: JSON.stringify(obj),
-        headers: {"Content-Type":"application/json"}
-    });
 
-    PopUp(res.status);
 
-    if(res.redirected)
-    {
-        //window.location.assign(res.url);
-        PopUp("Login");
-        
-    }
-}
-
-document.getElementById("loginForm").addEventListener("submit", Login);

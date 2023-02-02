@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Login</title>
+    <link rel="stylesheet" href="css/stylesheet.css">
+    <script src="js/main.js"></script>
+    <script defer src="js/login.js"></script>
+</head>
+
+<body style="background-image: url('eljen.jpg'); ">
+    <div class="boxMenu" style="height: 90vh; margin-top: 0px; padding: 5vh; ">
+        <div id="login" class="box" >
+            <form action="/login" method="post" id="loginForm" class="accountForm">
+                <input type="text" name="uname" placeholder="Username"> 
+                <input type="password" name="password" placeholder="Password" >
+                <input type="submit" value="Login" style="height: 10%;">
+            </form>
+            <p style="font-size: 0.8rem;">Don't have an account? Create one <a href="createaccount">here!</a></p>
+        </div>
+    </div>
+    
+</body>
