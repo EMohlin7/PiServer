@@ -90,16 +90,18 @@ namespace PiServer
                     rr = await server.ReceiveAsync(client);
                 } while (await OnReceive(rr));
             }
-            catch (InvalidOperationException e) { }
-           
+            catch (InvalidOperationException) { }
+            
             server.CloseClientSocket(client);
         }
 
+        //Returns: A bool that indicates if the connection should be kept alive or not
         private static async Task<bool> OnReceive(ReceiveResult rr)
         {
-            if (rr.size == 0)
+
+            //Means that the client sent a empty message which often indicates end of transmission in this case
+            if (rr.size == 0) 
             {
-                server.CloseClientSocket(server.GetClient(rr.remoteEndPoint));
                 return false;
             }
 
@@ -288,9 +290,9 @@ namespace PiServer
             return server.SendAsync(utf8.GetBytes(new Response(500).GetMsg()), remoteEndPoint);
         }
 
-        private static void OnClientClosed(TcpClient client)
+        private static void OnClientClosed(IPEndPoint ep)
         {
-            Console.WriteLine("Removed {0}, {1} remaining", client, server.ConnectedClients());
+            Console.WriteLine("Removed {0}, {1} remaining", ep, server.ConnectedClients());
         }
 
         
