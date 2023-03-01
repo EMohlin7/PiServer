@@ -81,44 +81,59 @@ namespace PiServer
         {
             var client = (TcpClient)tcpClient;
             Console.WriteLine("{0} connected", client.Client.RemoteEndPoint);
-            var receiveTask = server.ReceiveAsync(client);
-            Task[] tasks = new Task[] { receiveTask, Task.Delay(3000) };
-            Task finishedTask = await Task.WhenAny(tasks);
 
-            if (!receiveTask.Equals(finishedTask))
+            ReceiveResult rr = ReceiveResult.Failed();
+            try
             {
-                server.CloseClientSocket(client);
-                return;
+                do
+                {
+                    rr = await server.ReceiveAsync(client);
+                } while (await OnReceive(rr));
             }
-
-            await OnReceive(receiveTask.Result);
+            catch (InvalidOperationException e) { }
+           
             server.CloseClientSocket(client);
         }
 
-        private static async Task OnReceive(ReceiveResult rr)
+        private static async Task<bool> OnReceive(ReceiveResult rr)
         {
             if (rr.size == 0)
             {
                 server.CloseClientSocket(server.GetClient(rr.remoteEndPoint));
-                return;
+                return false;
             }
 
             Console.WriteLine("ep:{0} size:{1} socket type:{2}", rr.remoteEndPoint, rr.size, rr.socketType);
             string receivedMsg = utf8.GetString(rr.buffer);
-            Console.WriteLine(receivedMsg);
+            //Console.WriteLine(receivedMsg);
             var req = new Request(receivedMsg);
-            var res = new Response();
-            res.code = 200;
-                       
+            Console.WriteLine(req.method);
+            bool keepAlive = false;
+            if(req.TryGetHeader("Connection", out string con))
+            {
+                if(con == "keep-alive")
+                    keepAlive = true;
+            }
+            var res = new Response(200);
+            
+
             try
             {
-                if(requestHandlers.TryGetValue(req.element, out requestHandler value))
+                if (requestHandlers.TryGetValue(req.element, out requestHandler value))
                     await value.Invoke(req, rr);
                 else
-                    await server.SendFile("Assets" + req.element, rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));                
+                {
+                    if (keepAlive)
+                    {
+                        res.SetHeader("Connection", "keep-alive");
+                        res.SetHeader("Content-Length", GetFileSize("Assets"+req.element).ToString());
+                    }
+                    await server.SendFile("Assets" + req.element, rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
+                }
             }
-            catch (Exception e) when (ExceptionFilter(e, server, rr)) { }
-           
+            catch (Exception e) when (ExceptionFilter(e, server, rr)) { keepAlive = false; }
+            
+            return keepAlive;
         }
         private static bool ExceptionFilter(Exception e, Server server, ReceiveResult rr)
         {
@@ -141,14 +156,18 @@ namespace PiServer
 
         private static Task SendIndex(Request req, ReceiveResult rr)
         {
-            byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
-            return server.SendFile("Assets/html/index.html", rr.remoteEndPoint, 0, null, code);
+            Response res = new Response(200);
+            res.SetHeader("Connection", "keep-alive");
+            res.SetHeader("Content-Length", GetFileSize("Assets/html/index.html").ToString());
+            return server.SendFile("Assets/html/index.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
         }
 
         private static Task UserLogin(Request req, ReceiveResult rr)
         {
-            byte[] code = utf8.GetBytes("HTTP/1.1 200 ok \r\n\r\n");
-            return server.SendFile("Assets/html/user_login.html", rr.remoteEndPoint, 0, null, code);
+            Response res = new Response(200);
+            res.SetHeader("Connection", "keep-alive");
+            res.SetHeader("Content-Length", GetFileSize("Assets/html/user_login.html").ToString());
+            return server.SendFile("Assets/html/user_login.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
         }
 
         private static Task SendVideo(Request req, ReceiveResult rr)
@@ -275,7 +294,10 @@ namespace PiServer
         }
 
         
-        
+        private static long GetFileSize(string file)
+        {
+            return new FileInfo(file).Length;
+        }
         private static void OnSend(long length, IPEndPoint ep)
         {
             Console.WriteLine("Sent {0} bytes to {1}", length, ep);
