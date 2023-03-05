@@ -36,70 +36,68 @@ namespace PiServer
             if(args.Length != 0 && int.TryParse(args[0], out int value))
                 port = value;
 
-            //server.onAccept += OnAccept;
+            server.clientAccepted += OnAccept;
             server.onSend += OnSend;
             server.onClientClosed += OnClientClosed;
-            bool success = server.StartListening(port);
+            bool success = server.StartListening(port, out string err);
             if(!success)
             {
-                Console.WriteLine("The server failed to start. Closing application...");
+                Console.WriteLine("The server failed to start.\n Error: {0}\n Closing application...", err);
                 return;
             }
 
-            Thread th = new Thread(CheckForClients);
-            th.IsBackground = true;
-            th.Start();
+            
 
             while(true)
             {
                 Console.WriteLine("Server listening on port {0}\nInput \"stop\" to stop server, or " +
                 "\"clear\" to clear the console", port);
                 string input = Console.ReadLine();
-                if(input == "clear")
-                    Console.Clear();
-                else if(input == "stop")
-                    break;
+                switch(input)
+                {
+                    case "clear":
+                        Console.Clear();
+                        break;
+                    case "stop":
+                        goto shutdown;
+                    case "clients":
+                        Console.WriteLine("Number of clients: " + server.connectedClients);
+                        break;
+
+                    default:
+                        break;
+                }
+                   
             }
+
+            shutdown:
             server.Shutdown();
         }
 
-        private static void CheckForClients()
+        private static async void OnAccept()
         {
-            while(true)
-            {
-                if(server.numWaitingClients > 0)
-                {
-                    Thread th = new Thread(OnAccept);
-                    th.IsBackground = true;
-                    th.Start(server.FetchWaitingClient());
-                }
-                
-            }
-        }
-
-        private static async void OnAccept(object tcpClient)
-        {
-            var client = (TcpClient)tcpClient;
+            if (!server.FetchWaitingClient(out TcpClient client))
+                return;
+           
             Console.WriteLine("{0} connected", client.Client.RemoteEndPoint);
 
-            ReceiveResult rr = ReceiveResult.Failed();
-            try
+            ReceiveResult rr;
+           
+            do
             {
-                do
-                {
-                    rr = await server.ReceiveAsync(client);
-                } while (await OnReceive(rr));
-            }
-            catch (InvalidOperationException) { }
+                rr = await server.ReceiveAsync(client);
+            } while (rr.success && await OnReceive(rr));
+            
             
             server.CloseClientSocket(client);
         }
 
+        
         //Returns: A bool that indicates if the connection should be kept alive or not
         private static async Task<bool> OnReceive(ReceiveResult rr)
         {
 
-            //Means that the client sent a empty message which often indicates end of transmission in this case
+            //size==0 Means that the client sent an empty message which often indicates end of transmission in this case
             if (rr.size == 0) 
             {
                 return false;
@@ -109,7 +107,7 @@ namespace PiServer
             string receivedMsg = utf8.GetString(rr.buffer);
             //Console.WriteLine(receivedMsg);
             var req = new Request(receivedMsg);
-            Console.WriteLine(req.method);
+            Console.WriteLine(req.method + " " + req.element);
             bool keepAlive = false;
             if(req.TryGetHeader("Connection", out string con))
             {
@@ -130,10 +128,10 @@ namespace PiServer
                         res.SetHeader("Connection", "keep-alive");
                         res.SetHeader("Content-Length", GetFileSize("Assets"+req.element).ToString());
                     }
-                    await server.SendFile("Assets" + req.element, rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
+                    await server.SendFileAsync("Assets" + req.element, rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
                 }
             }
-            catch (Exception e) when (ExceptionFilter(e, server, rr)) { keepAlive = false; }
+            catch (Exception e) when (ExceptionFilter(e, server, rr)) { return false; }
             
             return keepAlive;
         }
@@ -161,7 +159,7 @@ namespace PiServer
             Response res = new Response(200);
             res.SetHeader("Connection", "keep-alive");
             res.SetHeader("Content-Length", GetFileSize("Assets/html/index.html").ToString());
-            return server.SendFile("Assets/html/index.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
+            return server.SendFileAsync("Assets/html/index.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
         }
 
         private static Task UserLogin(Request req, ReceiveResult rr)
@@ -169,7 +167,7 @@ namespace PiServer
             Response res = new Response(200);
             res.SetHeader("Connection", "keep-alive");
             res.SetHeader("Content-Length", GetFileSize("Assets/html/user_login.html").ToString());
-            return server.SendFile("Assets/html/user_login.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
+            return server.SendFileAsync("Assets/html/user_login.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
         }
 
         private static Task SendVideo(Request req, ReceiveResult rr)
@@ -190,7 +188,7 @@ namespace PiServer
                 res.SetHeader("Content-Length", string.Format("{0}", (end ?? fileLength-1) - offset+1));
             }
 
-            return server.SendFile("Assets/"+req.element, rr.remoteEndPoint, offset, end, utf8.GetBytes(res.GetMsg()));
+            return server.SendFileAsync("Assets/"+req.element, rr.remoteEndPoint, offset, end, utf8.GetBytes(res.GetMsg()));
         }
 
         private static async Task<Task> PcStarter(Request req, ReceiveResult rr)
@@ -254,7 +252,7 @@ namespace PiServer
             var res = new Response(200);
             res.SetHeader("Content-Type", "text/html");
         
-            await server.SendFile("Assets/html/createAccount.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
+            await server.SendFileAsync("Assets/html/createAccount.html", rr.remoteEndPoint, 0, null, utf8.GetBytes(res.GetMsg()));
         }
 
         private static async Task<Task> NewAccount(Request req, ReceiveResult rr)
